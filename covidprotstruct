@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+
+import sys
+import getopt
+import csv
+
+import Bio
+import Bio.PDB
+import Bio.SeqIO
+
+
+class CovidProtein:
+    
+    def __init__(self, covidGenome, featureQualifier, featureQualifierValue, pdbFname, structureName, polyPeptideIndex):
+        self.covidGenome = covidGenome
+        self.structureName = structureName
+        self.pdbFname = pdbFname
+        self.featureQualifier = featureQualifier
+        self.featureQualifierValue = featureQualifierValue
+        self.polyPeptideIndex = polyPeptideIndex
+        self.feature = self.findFeature()
+        if self.feature is None:
+            raise Exception('failed to find feature with qualifier %s = %s' % (self.featureQualifier, self.featureQualifierValue))
+        self.structure = self.readStructure()
+        ppBuilder = Bio.PDB.PPBuilder()
+        polyPeptideList = list(ppBuilder.build_peptides(self.structure))
+        self.polyPeptide = polyPeptideList[self.polyPeptideIndex]
+        if str(self.polyPeptide.get_sequence()) != str(self.feature.extract(self.covidGenome).seq.translate()):
+            raise Exception('translated genomic sequence does not match PDB sequence')
+
+    def readStructure(self):
+        return Bio.PDB.PDBParser().get_structure(self.structureName, self.pdbFname)
+
+    def findFeature(self):
+        for feature in self.covidGenome.features:
+            if self.featureQualifier in feature.qualifiers:
+                if self.featureQualifierValue in feature.qualifiers[self.featureQualifier]:
+                    return feature
+        return None
+
+
+def readCovidGenome(genbankFname):
+    return next(Bio.SeqIO.parse(genbankFname, 'genbank'))
+
+
+def addVariation(covidGenome, variantListFname):
+    if 'variant' in covidGenome.letter_annotations:
+        raise Exception('variants already added')
+    covidGenome.letter_annotations['variant'] = [set()] * len(covidGenome)
+    print(len(covidGenome))
+    with open(variantListFname, 'r') as variantListFile:
+        for row in csv.DictReader(variantListFile, dialect='excel-tab'):
+            chrom = row['CHROM']
+            position = int(row['POS']) - 1
+            refBase = row['REF']
+            altBase = row['ALT']
+            if chrom != covidGenome.name:
+                raise Exception('position %d: name mismatch: genome is %s but variant CHROM is %s' % (position, covidGenome.name, chrom))
+            if covidGenome.seq[position] != refBase:
+                raise Exception('position %d: genome base is %s but reference base is %s' % (position, covidGenome.seq[position], refBase))
+            covidGenome.letter_annotations['variant'][position] = covidGenome.letter_annotations['variant'][position] | set(altBase)
+            
+
+options, args = getopt.getopt(sys.argv[1:], 'm:h')
+for opt, par in options:
+    if opt == '-h':
+        print('options:')
+        print('-h: print this help and exit')
+        sys.exit()
+    else:
+        raise Exception('unhandled option "%s"' % opt)
+if len(args) > 0:
+    infile = open(args[0], 'r')
+else:
+    infile = sys.stdin
+if len(args) > 1:
+    outfile = open(args[1], 'w')
+else:
+    outfile = sys.stdout
+
+pdbFname = 'pdb6lu7.ent'
+genbankFname = 'NC_045512.2.gb'
+variantListFname = 'variant_list.tsv'
+covidGenome = readCovidGenome(genbankFname)
+addVariation(covidGenome, variantListFname)
+mproCovidProtein = CovidProtein(covidGenome, 'product', '3C-like proteinase', pdbFname, 'mpro', 0)
+nVar = [len(s) + 1 for s in covidGenome.letter_annotations['variant']]
+with open('nvar.csv', 'w') as f:
+    w = csv.DictWriter(f, ['position', 'nvar'])
+    w.writeheader()
+    for i in range(len(nVar)):
+        w.writerow({'position': i, 'nvar': nVar[i]})
+
+sys.exit(1)
+
+
+p = Bio.PDB.PDBParser()
+structure = p.get_structure('mpro', pdbFname)
+model = structure[0]
+chain = model['A']
+ppBuilder = Bio.PDB.PPBuilder()
+polyPeptideList = list(ppBuilder.build_peptides(structure))
+pdbMproPolyPeptide = polyPeptideList[0]
+pdbMproSeq = pdbMproPolyPeptide.get_sequence()
+srList = list(Bio.SeqIO.parse(genbankFname, 'genbank'))
+genbankSeqRecord = srList[0]
+mproFeature = None
+for feature in genbankSeqRecord.features:
+    if 'product' in feature.qualifiers:
+        if feature.qualifiers['product'][0] == '3C-like proteinase':
+            mproFeature = feature
+if mproFeature is not None:
+    genbankMproGeneSeq = mproFeature.extract(genbankSeqRecord.seq)
+    print(genbankMproGeneSeq)
+    genbankMproSeq = genbankMproGeneSeq.translate()
+    print(str(genbankMproSeq) == str(pdbMproSeq))
