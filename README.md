@@ -2,10 +2,18 @@
 
 This repo contains miscellaneous exploratory work related to Covid-19.
 
+## Personal Warm-Up Project
+
+Idea: Map variation information to protein structures. Initially, get
+variation information from `variant_list.tsv` and use PDB files
+`pdb6lu7.ent` and `6vsb.pdb`. Code (thus far) in script
+`covidprodstruct`.
+
 
 ## Links to External Materials
 
-* `pdb6lu7.ent`: downloaded from https://www.ebi.ac.uk/pdbe/entry/pdb/6lu7
+* Covid-19 proteinase `pdb6lu7.ent`: downloaded from https://www.ebi.ac.uk/pdbe/entry/pdb/6lu7
+* Covid-19 spike protein `6vsb.pdb`: downloaded from https://www.rcsb.org/structure/6vsb
 * `NC_045512.2.gb`: downloaded from
   https://www.ncbi.nlm.nih.gov/nuccore/NC_045512.2/
 * `variant_list.tsv`: downloaded from
@@ -20,6 +28,7 @@ reference to them.
 
 ### Data, Computational Resources
 
+* [COVID-19 Data Platform](https://www.ebi.ac.uk/covid-19) hosted by EBI
 * [ELIXIR support for SARS-CoV-2 research](https://elixir-europe.org/covid-19-resources)
 * [rOpenStats COVID19 package](https://github.com/rOpenStats/COVID19)
 
@@ -50,3 +59,4 @@ reference to them.
   occurs.
 * [Epidemic Calculator](https://gabgoh.github.io/COVID/index.html) by Gabriel Goh
 * [COVID-19 reports](https://www.imperial.ac.uk/mrc-global-infectious-disease-analysis/news--wuhan-coronavirus/) from Imperial College
+* [COVID-19 Scenarios](https://neherlab.org/covid19/) (Neher lab)

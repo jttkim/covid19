@@ -3,6 +3,8 @@
 import sys
 import getopt
 import csv
+import time
+import subprocess
 
 import Bio
 import Bio.PDB
@@ -11,25 +13,32 @@ import Bio.SeqIO
 
 class CovidProtein:
     
-    def __init__(self, covidGenome, featureQualifier, featureQualifierValue, pdbFname, structureName, polyPeptideIndex):
+    def __init__(self, covidGenome, featureQualifier, featureQualifierValue, pdbFname, structureName, polyPeptideChainId):
         self.covidGenome = covidGenome
         self.structureName = structureName
         self.pdbFname = pdbFname
         self.featureQualifier = featureQualifier
         self.featureQualifierValue = featureQualifierValue
-        self.polyPeptideIndex = polyPeptideIndex
+        self.polyPeptideChainId = polyPeptideChainId
         self.feature = self.findFeature()
         if self.feature is None:
             raise Exception('failed to find feature with qualifier %s = %s' % (self.featureQualifier, self.featureQualifierValue))
         self.structure = self.readStructure()
-        ppBuilder = Bio.PDB.PPBuilder()
-        polyPeptideList = list(ppBuilder.build_peptides(self.structure))
-        self.polyPeptide = polyPeptideList[self.polyPeptideIndex]
-        if str(self.polyPeptide.get_sequence()) != str(self.feature.extract(self.covidGenome).seq.translate()):
-            raise Exception('translated genomic sequence does not match PDB sequence')
+        self.polyPeptide = self.findPolyPeptide()
 
     def readStructure(self):
         return Bio.PDB.PDBParser().get_structure(self.structureName, self.pdbFname)
+    
+    def findPolyPeptide(self):
+        chainIdList = [chain.id for chain in self.structure.get_chains()]
+        if self.polyPeptideChainId not in chainIdList:
+            raise Exception('chain %s not in structure (contains chains %s)' % (self.polyPeptideChainId, ', '.join(chainIdList)))
+        polyPeptideIndex = chainIdList.index(self.polyPeptideChainId)
+        ppBuilder = Bio.PDB.PPBuilder()
+        polyPeptideList = list(ppBuilder.build_peptides(self.structure))
+        self.polyPeptide = polyPeptideList[polyPeptideIndex]
+        if str(self.polyPeptide.get_sequence()) != str(self.feature.extract(self.covidGenome).seq.translate()):
+            raise Exception('translated genomic sequence does not match PDB sequence')
 
     def findFeature(self):
         for feature in self.covidGenome.features:
@@ -38,6 +47,48 @@ class CovidProtein:
                     return feature
         return None
 
+    def makeVariationLevelList(self):
+        cds = self.feature.extract(self.covidGenome)
+        numCodons = len(cds) // 3
+        l = []
+        for i in range(numCodons):
+            l.append(sum([len(varSet) + 1 for varSet in cds.letter_annotations['variant'][i:(i + 3)]]))
+        return l
+
+# pymol sample commands
+# select resi 3 and chain A
+# show sphere, (sele)
+# show sphere, (sele)
+# color 0xffaa22, (sele)
+    def showMolecule(self):
+        variationLevelList = self.makeVariationLevelList()
+        print(variationLevelList)
+        pymolCommandList = ['hide']
+        for i in range(len(variationLevelList)):
+            selectionId = 'r%04d' % i
+            grayShade = 30 + 15 * variationLevelList[i]
+            residueColor = '0x%02x%02x%02x' % (grayShade, grayShade, grayShade)
+            pymolCommandList.append('select %s, resi %d and chain %s' % (selectionId, i, self.polyPeptideChainId))
+            pymolCommandList.append('color %s, %s' % (residueColor, selectionId))
+            pymolCommandList.append('show sphere, %s' % selectionId)
+        pymolArgv = ['pymol', '-p', self.pdbFname]
+        stdin = sys.stdin
+        stdout = sys.stdout
+        stderr = sys.stderr
+        pymolProcess = subprocess.Popen(pymolArgv, stdin=subprocess.PIPE, universal_newlines=True)
+        for pymolCommand in pymolCommandList:
+            # sys.stderr.write('%s\n' % pymolCommand)
+            pymolProcess.stdin.write('%s\n' % pymolCommand)
+            pymolProcess.stdin.flush()
+        stderr.write('hit return\n')
+        stdin.readline()
+        pymolProcess.stdin.close()
+        pymolReturncode = pymolProcess.wait()
+        if pymolReturncode != 0:
+            raise Exception('process %s returned %d' % (' '.join(pymolArgv), pymolReturncode))
+        sys.stdin = stdin
+        sys.stdout = stdout
+        sys.stderr = stderr
 
 def readCovidGenome(genbankFname):
     return next(Bio.SeqIO.parse(genbankFname, 'genbank'))
@@ -83,14 +134,14 @@ genbankFname = 'NC_045512.2.gb'
 variantListFname = 'variant_list.tsv'
 covidGenome = readCovidGenome(genbankFname)
 addVariation(covidGenome, variantListFname)
-mproCovidProtein = CovidProtein(covidGenome, 'product', '3C-like proteinase', pdbFname, 'mpro', 0)
+mproCovidProtein = CovidProtein(covidGenome, 'product', '3C-like proteinase', pdbFname, 'mpro', 'A')
 nVar = [len(s) + 1 for s in covidGenome.letter_annotations['variant']]
 with open('nvar.csv', 'w') as f:
     w = csv.DictWriter(f, ['position', 'nvar'])
     w.writeheader()
     for i in range(len(nVar)):
         w.writerow({'position': i, 'nvar': nVar[i]})
-
+mproCovidProtein.showMolecule()
 sys.exit(1)
 
 
