@@ -9,36 +9,83 @@ import subprocess
 import Bio
 import Bio.PDB
 import Bio.SeqIO
+import Bio.SeqUtils
+
+
+def extractAminoAcidSeqFromChain(chain):
+    residueList = sorted(chain.get_residues(), key=lambda r: r.get_id()[1])
+    nonAminoAcidSet = set()
+    l1 = []
+    for residue in residueList:
+        n = residue.get_resname()
+        a1 = Bio.SeqUtils.seq1(n)
+        if a1 == 'X':
+            nonAminoAcidSet.add(n)
+        else:
+            l1.append(a1)
+    sys.stderr.write('chain %s: non-aminoacid residues: %s\n' % (chain.id, ', '.join(nonAminoAcidSet)))
+    return Bio.Seq.Seq(''.join(l1), alphabet=Bio.Alphabet.generic_protein)
+                               
+
+def makePymolHeatColorList(numLevels, baseGrey):
+    redOffset = 0
+    greenOffset = numLevels // 3
+    blueOffset = 2 * numLevels // 3
+    step = (255 - baseGrey) // numLevels
+    colorList = []
+    for level in range(numLevels):
+        r = max(baseGrey, min(baseGrey + (level - redOffset) * step, 255))
+        g = max(baseGrey, min(baseGrey + (level - greenOffset) * step, 255))
+        b = max(baseGrey, min(baseGrey + (level - blueOffset) * step, 255))
+        sys.stderr.write('level = %d, step = %d, r = %d, g = %d, b = %d\n' % (level, step, r, g, b))
+        colorList.append('0x%02x%02x%02x' % (r, g, b))
+    return colorList
 
 
 class CovidProtein:
     
-    def __init__(self, covidGenome, featureQualifier, featureQualifierValue, pdbFname, structureName, polyPeptideChainId):
+    def __init__(self, covidGenome, featureQualifier, featureQualifierValue, pdbFname, structureName, chainId):
         self.covidGenome = covidGenome
         self.structureName = structureName
         self.pdbFname = pdbFname
         self.featureQualifier = featureQualifier
         self.featureQualifierValue = featureQualifierValue
-        self.polyPeptideChainId = polyPeptideChainId
+        self.chainId = chainId
         self.feature = self.findFeature()
         if self.feature is None:
             raise Exception('failed to find feature with qualifier %s = %s' % (self.featureQualifier, self.featureQualifierValue))
         self.structure = self.readStructure()
-        self.polyPeptide = self.findPolyPeptide()
+        self.crossCheckGenomeAndPdb()
 
     def readStructure(self):
         return Bio.PDB.PDBParser().get_structure(self.structureName, self.pdbFname)
     
-    def findPolyPeptide(self):
-        chainIdList = [chain.id for chain in self.structure.get_chains()]
-        if self.polyPeptideChainId not in chainIdList:
-            raise Exception('chain %s not in structure (contains chains %s)' % (self.polyPeptideChainId, ', '.join(chainIdList)))
-        polyPeptideIndex = chainIdList.index(self.polyPeptideChainId)
+    def getChainIdList(self):
+        return [chain.id for chain in self.structure.get_chains()]
+    
+    def getChainIndex(self):
+        chainIdList = self.getChainIdList()
+        if self.chainId not in chainIdList:
+            raise Exception('chain %s not in structure (contains chains %s)' % (self.chainId, ', '.join(chainIdList)))
+        return chainIdList.index(self.chainId)
+    
+    def getChain(self):
+        return list(self.structure.get_chains())[self.getChainIndex()]
+    
+    def getAminoAcidSeqViaPolyPeptide(self):
+        """obsolete, as chain index and polypeptide index are not always the same.
+"""
+        polyPeptideIndex = self.getChainIndex()
         ppBuilder = Bio.PDB.PPBuilder()
         polyPeptideList = list(ppBuilder.build_peptides(self.structure))
-        self.polyPeptide = polyPeptideList[polyPeptideIndex]
-        if str(self.polyPeptide.get_sequence()) != str(self.feature.extract(self.covidGenome).seq.translate()):
-            raise Exception('translated genomic sequence does not match PDB sequence')
+        return polyPeptideList[polyPeptideIndex]
+
+    def crossCheckGenomeAndPdb(self):
+        chainSeq = extractAminoAcidSeqFromChain(self.getChain())
+        translatedGenomicSeq = self.feature.extract(self.covidGenome).seq.translate()
+        if str(chainSeq) != str(translatedGenomicSeq):
+            sys.stderr.write('translated genomic: %s\nchain: %s\n' % (str(translatedGenomicSeq), str(chainSeq)))
+            raise Exception('translated genomic sequence does not match chain sequence')
 
     def findFeature(self):
         for feature in self.covidGenome.features:
@@ -48,6 +95,13 @@ class CovidProtein:
         return None
 
     def makeVariationLevelList(self):
+        """Basic indicator of variation per codon.
+
+Variation level is the sum of variants recorded for each
+position in the codon, i.e. 3 for no variation (only base
+in all positions is the reference base), 12 for all bases
+in all three positions.
+"""
         cds = self.feature.extract(self.covidGenome)
         numCodons = len(cds) // 3
         l = []
@@ -62,15 +116,24 @@ class CovidProtein:
 # color 0xffaa22, (sele)
     def showMolecule(self):
         variationLevelList = self.makeVariationLevelList()
-        print(variationLevelList)
+        colorList = makePymolHeatColorList(10, 20)
         pymolCommandList = ['hide']
+        for chainId in self.getChainIdList():
+            if chainId != self.chainId:
+                chainSelection = 'chain%s' % chainId
+                pymolCommandList.append('select %s, chain %s' % (chainSelection, chainId))
+                pymolCommandList.append('color blue, %s' % chainSelection)
+                pymolCommandList.append('show sticks, %s' % chainSelection)
+        chainSelection = 'chain%s' % self.chainId
+        pymolCommandList.append('select %s, chain %s' % (chainSelection, self.chainId))
+        pymolCommandList.append('color green, %s' % chainSelection)
+        pymolCommandList.append('show sticks, %s' % chainSelection)
         for i in range(len(variationLevelList)):
             selectionId = 'r%04d' % i
-            grayShade = 30 + 15 * variationLevelList[i]
-            residueColor = '0x%02x%02x%02x' % (grayShade, grayShade, grayShade)
-            pymolCommandList.append('select %s, resi %d and chain %s' % (selectionId, i, self.polyPeptideChainId))
-            pymolCommandList.append('color %s, %s' % (residueColor, selectionId))
+            pymolCommandList.append('select %s, resi %d and chain %s' % (selectionId, i, self.chainId))
+            pymolCommandList.append('color %s, %s' % (colorList[variationLevelList[i] - 3], selectionId))
             pymolCommandList.append('show sphere, %s' % selectionId)
+        pymolCommandList.append('deselect')
         pymolArgv = ['pymol', '-p', self.pdbFname]
         stdin = sys.stdin
         stdout = sys.stdout
@@ -89,6 +152,8 @@ class CovidProtein:
         sys.stdin = stdin
         sys.stdout = stdout
         sys.stderr = stderr
+        sys.stderr.write('%s\n' % str(pymolCommandList))
+
 
 def readCovidGenome(genbankFname):
     return next(Bio.SeqIO.parse(genbankFname, 'genbank'))
@@ -110,7 +175,9 @@ def addVariation(covidGenome, variantListFname):
             if covidGenome.seq[position] != refBase:
                 raise Exception('position %d: genome base is %s but reference base is %s' % (position, covidGenome.seq[position], refBase))
             covidGenome.letter_annotations['variant'][position] = covidGenome.letter_annotations['variant'][position] | set(altBase)
-            
+
+# print(makePymolHeatColorList(10, 20))
+# sys.exit(1)
 
 options, args = getopt.getopt(sys.argv[1:], 'm:h')
 for opt, par in options:
@@ -129,12 +196,14 @@ if len(args) > 1:
 else:
     outfile = sys.stdout
 
-pdbFname = 'pdb6lu7.ent'
+mproPdbFname = 'pdb6lu7.ent'
+spikePdbFname = '6vsb.pdb'
 genbankFname = 'NC_045512.2.gb'
 variantListFname = 'variant_list.tsv'
 covidGenome = readCovidGenome(genbankFname)
 addVariation(covidGenome, variantListFname)
-mproCovidProtein = CovidProtein(covidGenome, 'product', '3C-like proteinase', pdbFname, 'mpro', 'A')
+mproCovidProtein = CovidProtein(covidGenome, 'product', '3C-like proteinase', mproPdbFname, 'mpro', 'A')
+# spikeCovidProtein = CovidProtein(covidGenome, 'product', 'surface glycoprotein', spikePdbFname, 'spike', 'C')
 nVar = [len(s) + 1 for s in covidGenome.letter_annotations['variant']]
 with open('nvar.csv', 'w') as f:
     w = csv.DictWriter(f, ['position', 'nvar'])
@@ -144,24 +213,24 @@ with open('nvar.csv', 'w') as f:
 mproCovidProtein.showMolecule()
 sys.exit(1)
 
-
-p = Bio.PDB.PDBParser()
-structure = p.get_structure('mpro', pdbFname)
-model = structure[0]
-chain = model['A']
-ppBuilder = Bio.PDB.PPBuilder()
-polyPeptideList = list(ppBuilder.build_peptides(structure))
-pdbMproPolyPeptide = polyPeptideList[0]
-pdbMproSeq = pdbMproPolyPeptide.get_sequence()
-srList = list(Bio.SeqIO.parse(genbankFname, 'genbank'))
-genbankSeqRecord = srList[0]
-mproFeature = None
-for feature in genbankSeqRecord.features:
-    if 'product' in feature.qualifiers:
-        if feature.qualifiers['product'][0] == '3C-like proteinase':
-            mproFeature = feature
-if mproFeature is not None:
-    genbankMproGeneSeq = mproFeature.extract(genbankSeqRecord.seq)
-    print(genbankMproGeneSeq)
-    genbankMproSeq = genbankMproGeneSeq.translate()
-    print(str(genbankMproSeq) == str(pdbMproSeq))
+if __name__ == '__main__':
+    p = Bio.PDB.PDBParser()
+    structure = p.get_structure('mpro', pdbFname)
+    model = structure[0]
+    chain = model['A']
+    ppBuilder = Bio.PDB.PPBuilder()
+    polyPeptideList = list(ppBuilder.build_peptides(structure))
+    pdbMproPolyPeptide = polyPeptideList[0]
+    pdbMproSeq = pdbMproPolyPeptide.get_sequence()
+    srList = list(Bio.SeqIO.parse(genbankFname, 'genbank'))
+    genbankSeqRecord = srList[0]
+    mproFeature = None
+    for feature in genbankSeqRecord.features:
+        if 'product' in feature.qualifiers:
+            if feature.qualifiers['product'][0] == '3C-like proteinase':
+                mproFeature = feature
+    if mproFeature is not None:
+        genbankMproGeneSeq = mproFeature.extract(genbankSeqRecord.seq)
+        print(genbankMproGeneSeq)
+        genbankMproSeq = genbankMproGeneSeq.translate()
+        print(str(genbankMproSeq) == str(pdbMproSeq))
