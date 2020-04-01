@@ -82,7 +82,7 @@ class CovidProtein:
 
     def crossCheckGenomeAndPdb(self):
         chainSeq = extractAminoAcidSeqFromChain(self.getChain())
-        translatedGenomicSeq = self.feature.extract(self.covidGenome).seq.translate()
+        translatedGenomicSeq = self.feature.extract(self.covidGenome).seq.translate(to_stop=True)
         if str(chainSeq) != str(translatedGenomicSeq):
             sys.stderr.write('translated genomic: %s\nchain: %s\n' % (str(translatedGenomicSeq), str(chainSeq)))
             raise Exception('translated genomic sequence does not match chain sequence')
@@ -179,41 +179,46 @@ def addVariation(covidGenome, variantListFname):
 # print(makePymolHeatColorList(10, 20))
 # sys.exit(1)
 
-options, args = getopt.getopt(sys.argv[1:], 'm:h')
-for opt, par in options:
-    if opt == '-h':
-        print('options:')
-        print('-h: print this help and exit')
-        sys.exit()
-    else:
-        raise Exception('unhandled option "%s"' % opt)
-if len(args) > 0:
-    infile = open(args[0], 'r')
-else:
-    infile = sys.stdin
-if len(args) > 1:
-    outfile = open(args[1], 'w')
-else:
-    outfile = sys.stdout
-
-mproPdbFname = 'pdb6lu7.ent'
-spikePdbFname = '6vsb.pdb'
-genbankFname = 'NC_045512.2.gb'
-variantListFname = 'variant_list.tsv'
-covidGenome = readCovidGenome(genbankFname)
-addVariation(covidGenome, variantListFname)
-mproCovidProtein = CovidProtein(covidGenome, 'product', '3C-like proteinase', mproPdbFname, 'mpro', 'A')
-# spikeCovidProtein = CovidProtein(covidGenome, 'product', 'surface glycoprotein', spikePdbFname, 'spike', 'C')
-nVar = [len(s) + 1 for s in covidGenome.letter_annotations['variant']]
-with open('nvar.csv', 'w') as f:
-    w = csv.DictWriter(f, ['position', 'nvar'])
-    w.writeheader()
-    for i in range(len(nVar)):
-        w.writerow({'position': i, 'nvar': nVar[i]})
-mproCovidProtein.showMolecule()
-sys.exit(1)
-
 if __name__ == '__main__':
+
+    options, args = getopt.getopt(sys.argv[1:], 'm:h')
+    for opt, par in options:
+        if opt == '-h':
+            print('options:')
+            print('-h: print this help and exit')
+            sys.exit()
+        else:
+            raise Exception('unhandled option "%s"' % opt)
+    if len(args) > 0:
+        infile = open(args[0], 'r')
+    else:
+        infile = sys.stdin
+    if len(args) > 1:
+        outfile = open(args[1], 'w')
+    else:
+        outfile = sys.stdout
+
+    mproPdbFname = 'pdb6lu7.ent'
+    spikePdbFname = '6vsb.pdb'
+    genbankFname = 'NC_045512.2.gb'
+    variantListFname = 'variant_list.tsv'
+    covidGenome = readCovidGenome(genbankFname)
+    addVariation(covidGenome, variantListFname)
+    mproCovidProtein = CovidProtein(covidGenome, 'product', '3C-like proteinase', mproPdbFname, 'mpro', 'A')
+    # spike PDB file has chains apparently fragmented into multiple polypeptides
+    # also, none of the three chains has an amino acid sequence matching that
+    # in NC_045512. More intelligent matching up of genome to structure sequence
+    # required.
+    # spikeCovidProtein = CovidProtein(covidGenome, 'product', 'surface glycoprotein', spikePdbFname, 'spike', 'C')
+    nVar = [len(s) + 1 for s in covidGenome.letter_annotations['variant']]
+    with open('nvar.csv', 'w') as f:
+        w = csv.DictWriter(f, ['position', 'nvar'])
+        w.writeheader()
+        for i in range(len(nVar)):
+            w.writerow({'position': i, 'nvar': nVar[i]})
+    mproCovidProtein.showMolecule()
+    sys.exit(1)
+
     p = Bio.PDB.PDBParser()
     structure = p.get_structure('mpro', pdbFname)
     model = structure[0]
