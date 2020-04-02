@@ -9,19 +9,56 @@ variation information from `variant_list.tsv` and use PDB files
 `pdb6lu7.ent` and `6vsb.pdb`. Code (thus far) in script
 `covidprotstruct`.
 
+### Software
+
+* Linux, Ubuntu 16.04 (xenial) http://releases.ubuntu.com/xenial/
+* Python 3.5.2 (newer Python versions should work too)
+* Biopython http://biopython.org/ 1.66
+* PyMOL 1.7.2
+
+### External Materials
+
+* Covid-19 main proteinase `pdb6lu7.ent`: downloaded from https://www.ebi.ac.uk/pdbe/entry/pdb/6lu7
+* Covid-19 spike protein `6vsb.pdb`: downloaded from https://www.rcsb.org/structure/6vsb
+* `NC_045512.2.gb`: downloaded from
+  https://www.ncbi.nlm.nih.gov/nuccore/NC_045512.2/ (currently not used)
+* `variant_list.tsv`: downloaded from
+  https://covid19.galaxyproject.org/genomics/4-variation/#analysis-of-illumina-paired-end-data
+
+### Method
+
+Variation levels for an amino acid are computed from the variant list
+by counting the number of nucleotides occurring in each position of
+the codon. This results in a number between 1 and 4 (the reference
+nucleotide and any variants all count). Adding these three numbers
+gives a level ranging from 3 (no variation at all) to 12 (all bases
+occur in all three positions). Corresponding colours range from dark
+grey (no variation) via red and yellow towards white (maximal
+variation).
+
+### Demo Result
+
 The image below shows the Covid-19 main protease subunit with amino
 acid residues coloured to indicate level variation.
 
 ![Covid-19 main protease](mpro.png)
 
-### External Materials Used
+### Remarks for Discussion
 
-* Covid-19 proteinase `pdb6lu7.ent`: downloaded from https://www.ebi.ac.uk/pdbe/entry/pdb/6lu7
-* Covid-19 spike protein `6vsb.pdb`: downloaded from https://www.rcsb.org/structure/6vsb
-* `NC_045512.2.gb`: downloaded from
-  https://www.ncbi.nlm.nih.gov/nuccore/NC_045512.2/
-* `variant_list.tsv`: downloaded from
-  https://covid19.galaxyproject.org/genomics/4-variation/#analysis-of-illumina-paired-end-data
+The method to compute variation levels is crude. Nonetheless, the
+image above seems to suggest that some parts of the protease are more
+strongly conserved than others.
+
+### Further Ideas
+
+* Use more reasonable / sensitive diversity indices, perhaps by
+  getting more detailed information from the BAM files underlying the
+  variation list.
+* Apply approach to other proteins (the spike protein is more tricky
+  than anticipated because the sequence represented in the PDB file
+  appears to be incomplete and fragmented, and also it does not
+  exactly match up to the amino acid sequence implied by the Covid-19
+  genome used here.
 
 
 ## Sources and Resources
