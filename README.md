@@ -18,10 +18,12 @@ variation information from `variant_list.tsv` and use PDB files
 
 ### External Materials
 
-* Covid-19 main proteinase `pdb6lu7.ent`: downloaded from https://www.ebi.ac.uk/pdbe/entry/pdb/6lu7
-* Covid-19 spike protein `6vsb.pdb`: downloaded from https://www.rcsb.org/structure/6vsb
+* Covid-19 main proteinase `pdb6lu7.ent`: downloaded from
+  https://www.ebi.ac.uk/pdbe/entry/pdb/6lu7
+* Covid-19 spike protein `6vsb.pdb`: downloaded from
+  https://www.rcsb.org/structure/6vsb (currently not used)
 * `NC_045512.2.gb`: downloaded from
-  https://www.ncbi.nlm.nih.gov/nuccore/NC_045512.2/ (currently not used)
+  https://www.ncbi.nlm.nih.gov/nuccore/NC_045512.2/
 * `variant_list.tsv`: downloaded from
   https://covid19.galaxyproject.org/genomics/4-variation/#analysis-of-illumina-paired-end-data
 
