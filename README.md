@@ -41,7 +41,7 @@ variation).
 
 ### Code
 
-See [covidprotstruct].
+See Python script [covidprotstruct](covidprodstruct).
 
 ### Demo Result
 
