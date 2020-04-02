@@ -9,8 +9,12 @@ variation information from `variant_list.tsv` and use PDB files
 `pdb6lu7.ent` and `6vsb.pdb`. Code (thus far) in script
 `covidprotstruct`.
 
+The image below shows the Covid-19 main protease subunit with amino
+acid residues coloured to indicate level variation.
 
-## Links to External Materials
+![Covid-19 main protease](mpro.png)
+
+### External Materials Used
 
 * Covid-19 proteinase `pdb6lu7.ent`: downloaded from https://www.ebi.ac.uk/pdbe/entry/pdb/6lu7
 * Covid-19 spike protein `6vsb.pdb`: downloaded from https://www.rcsb.org/structure/6vsb
