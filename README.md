@@ -7,7 +7,7 @@ This repo contains miscellaneous exploratory work related to Covid-19.
 Idea: Map variation information to protein structures. Initially, get
 variation information from `variant_list.tsv` and use PDB files
 `pdb6lu7.ent` and `6vsb.pdb`. Code (thus far) in script
-`covidprodstruct`.
+`covidprotstruct`.
 
 
 ## Links to External Materials
