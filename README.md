@@ -4,10 +4,11 @@ This repo contains miscellaneous exploratory work related to Covid-19.
 
 ## Personal Warm-Up Project
 
-Idea: Map variation information to protein structures. Initially, get
-variation information from `variant_list.tsv` and use PDB files
-`pdb6lu7.ent` and `6vsb.pdb`. Code (thus far) in script
-`covidprotstruct`.
+The main purpose of this project is to get me started and somewhat
+familiarised with Covid-19 bioloty and resources. My idea is to map
+variation information to protein structures. Initially, get variation
+information from `variant_list.tsv` and use PDB files `pdb6lu7.ent`
+and `6vsb.pdb`.
 
 ### Software
 
@@ -37,6 +38,10 @@ gives a level ranging from 3 (no variation at all) to 12 (all bases
 occur in all three positions). Corresponding colours range from dark
 grey (no variation) via red and yellow towards white (maximal
 variation).
+
+### Code
+
+See [covidprotstruct].
 
 ### Demo Result
 
