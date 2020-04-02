@@ -31,7 +31,7 @@ def makePymolHeatColorList(numLevels, baseGrey):
     redOffset = 0
     greenOffset = numLevels // 3
     blueOffset = 2 * numLevels // 3
-    step = (255 - baseGrey) // numLevels
+    step = (255 - baseGrey) // numLevels * 3
     colorList = []
     for level in range(numLevels):
         r = max(baseGrey, min(baseGrey + (level - redOffset) * step, 255))
@@ -114,10 +114,11 @@ in all three positions.
 # show sphere, (sele)
 # show sphere, (sele)
 # color 0xffaa22, (sele)
-    def showMolecule(self):
+    def showMoleculePymol(self, initialCommandList, finalCommandList):
         variationLevelList = self.makeVariationLevelList()
         colorList = makePymolHeatColorList(10, 20)
-        pymolCommandList = ['hide']
+        pymolCommandList = initialCommandList[:]
+        pymolCommandList.append('hide')
         for chainId in self.getChainIdList():
             if chainId != self.chainId:
                 chainSelection = 'chain%s' % chainId
@@ -134,6 +135,7 @@ in all three positions.
             pymolCommandList.append('color %s, %s' % (colorList[variationLevelList[i] - 3], selectionId))
             pymolCommandList.append('show sphere, %s' % selectionId)
         pymolCommandList.append('deselect')
+        pymolCommandList.extend(finalCommandList)
         pymolArgv = ['pymol', '-p', self.pdbFname]
         stdin = sys.stdin
         stdout = sys.stdout
@@ -216,7 +218,7 @@ if __name__ == '__main__':
         w.writeheader()
         for i in range(len(nVar)):
             w.writerow({'position': i, 'nvar': nVar[i]})
-    mproCovidProtein.showMolecule()
+    mproCovidProtein.showMoleculePymol(['bg_color white', 'set fog, off'], ['rotate x, 130', 'rotate z, -30', 'rotate y, -80', 'zoom complete=1'])
     sys.exit(1)
 
     p = Bio.PDB.PDBParser()
