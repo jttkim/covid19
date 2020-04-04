@@ -285,8 +285,8 @@ if __name__ == '__main__':
     covidGenome = readCovidGenome(genbankFname)
     addVariation(covidGenome, variantListFname)
     mproCovidProtein = CovidProtein('mpro', covidGenome, 'product', '3C-like proteinase', mproPdbFname, 'A')
-    # mproCovidProtein.showMoleculePymol(['bg_color white', 'set fog, off'], ['rotate x, 130', 'rotate z, -30', 'rotate y, -80', 'zoom complete=1'])
-    # sys.exit(1)
+    mproCovidProtein.showMoleculePymol(['bg_color white', 'set fog, off'], ['rotate x, 130', 'rotate z, -30', 'rotate y, -80', 'zoom complete=1'])
+    sys.exit(1)
     # spike PDB file has chains apparently fragmented into multiple polypeptides
     # also, none of the three chains has an amino acid sequence matching that
     # in NC_045512. More intelligent matching up of genome to structure sequence
