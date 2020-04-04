@@ -45,16 +45,24 @@ See Python script [covidprotstruct](covidprotstruct).
 
 ### Demo Result
 
-The image below shows the Covid-19 main protease subunit with amino
-acid residues coloured to indicate level variation.
+The images below shows the Covid-19 main protease subunit (6lu7) and
+the spike protein (6vsb) with amino acid residues coloured to indicate
+level variation.
 
 ![Covid-19 main protease](mpro.png)
 ![Covid-19 spike protein](spike.png)
 
+Note: An early version of the protease image showed rather different
+colours due to an indexing bug which is now fixed. However, generally
+the code in this repo, which was used to generate these images, is
+very preliminary. The images are illustrative of this project's idea,
+but their accuracy and correctness should be assessed by reviewing the
+code before using them to infer any specific biochemical conclusions.
+
 ### Remarks for Discussion
 
 The method to compute variation levels is crude. Nonetheless, the
-image above seems to suggest that some parts of the protease are more
+image above seems to suggest that some parts of the proteins are more
 strongly conserved than others.
 
 ### Further Ideas
