@@ -49,6 +49,7 @@ The image below shows the Covid-19 main protease subunit with amino
 acid residues coloured to indicate level variation.
 
 ![Covid-19 main protease](mpro.png)
+![Covid-19 spike protein](spike.png)
 
 ### Remarks for Discussion
 
