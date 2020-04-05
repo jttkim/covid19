@@ -15,7 +15,16 @@ and `6vsb.pdb`.
 * Linux, Ubuntu 16.04 (xenial) http://releases.ubuntu.com/xenial/
 * Python 3.5.2 (newer Python versions should work too)
 * Biopython http://biopython.org/ 1.66
+* EMBOSS 6.6.0 (for the `needle` program)
 * PyMOL 1.7.2
+
+Version numbers are stated for reproducibility purposes. They result
+from the Linux system I use (xenial) and the software versions
+provided by the packages in the standard repository for this
+distribution. Nothing specific to these versions is used, generally
+the software should work on any reasonably modern distribution with no
+or only minor changes.
+
 
 ### External Materials
 
@@ -38,6 +47,38 @@ gives a level ranging from 3 (no variation at all) to 12 (all bases
 occur in all three positions). Corresponding colours range from dark
 grey (no variation) via red and yellow towards white (maximal
 variation).
+
+#### Matching Genomic Codons to Amino Acids in 3D Protein Structures
+
+Amino acid sequences from features in the genome (`NC_045512.2`) do
+not always match up by position to the amino acids included in a PDB
+file. More specifically, the amino acid sequence extracted from the C
+chain of the spike protein (`6vsb`) is fragmented and some patches of
+sequences present in the genomic feature (with a `product` qualifier
+of `surface protein`) are not present in the PDB file.
+
+Therefore amino acid residues are matched up individually as follows:
+
+* determine the sequence of the feature as the _feature sequence_, and
+  translate it to obtain the _translated feature sequence_.
+
+* extract the amino acid sequence of the relevant chain in the PDB
+  file to obtain the _chain sequence_, and record the index of each
+  residue as the _residue index_ (1-based, following PDB conventions I
+  think).
+
+* compute an alignment of the translated feature sequence and the chain
+  sequence, and, for each nucleotide in the feature sequence, record
+  the index of the aligned residue in the chain sequence as the
+  _chain index_; record `None` for nucleotides encoding amino acids
+  aligned to a gap character.
+
+Using the chain index and the residue index, variant information from
+the feature sequence can be mapped to residues in the chain. This
+method can be used for any other per-nucleotide information from
+feature sequences. Aggregating such information from multiple variant
+genome sequences would require a genome to reference genome mapping
+index.
 
 ### Code
 

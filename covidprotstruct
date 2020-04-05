@@ -133,7 +133,7 @@ class CovidProtein:
         translatedFeatureSeq = self.featureSeqRecord.seq.translate(to_stop=True)
         translatedFeatureSr = Bio.SeqRecord.SeqRecord(translatedFeatureSeq, id='%s_genomictrans' % self.structureName)
         alignment = alignNeedle(translatedFeatureSr, [self.chainSeqRecord])[0]
-        self.featureSeqRecord.letter_annotations['pdbAminoAcidIndex'] = [None] * len(self.featureSeqRecord)
+        self.featureSeqRecord.letter_annotations['chainIndex'] = [None] * len(self.featureSeqRecord)
         Bio.AlignIO.write(alignment, sys.stderr, 'fasta')
         iFeature = 0
         iChain = 0
@@ -143,9 +143,9 @@ class CovidProtein:
             if aaFeature != gapChar:
                 if aaChain != gapChar:
                     j = iFeature * 3
-                    self.featureSeqRecord.letter_annotations['pdbAminoAcidIndex'][j] = iChain
-                    self.featureSeqRecord.letter_annotations['pdbAminoAcidIndex'][j + 1] = iChain
-                    self.featureSeqRecord.letter_annotations['pdbAminoAcidIndex'][j + 2] = iChain
+                    self.featureSeqRecord.letter_annotations['chainIndex'][j] = iChain
+                    self.featureSeqRecord.letter_annotations['chainIndex'][j + 1] = iChain
+                    self.featureSeqRecord.letter_annotations['chainIndex'][j + 2] = iChain
             if aaChain != gapChar:
                 iChain = iChain + 1
             if aaFeature != gapChar:
@@ -161,7 +161,7 @@ in all three positions.
 """
         l = [0] * len(self.chainSeqRecord)
         for i in range(len(self.featureSeqRecord)):
-            j = self.featureSeqRecord.letter_annotations['pdbAminoAcidIndex'][i]
+            j = self.featureSeqRecord.letter_annotations['chainIndex'][i]
             if j is not None:
                 l[j] = l[j] + len(self.featureSeqRecord.letter_annotations['variant'][i])
         return l
@@ -219,7 +219,7 @@ in all three positions.
         sys.stdin = stdin
         sys.stdout = stdout
         sys.stderr = stderr
-        sys.stderr.write('%s\n' % str(pymolCommandList))
+        # sys.stderr.write('%s\n' % str(pymolCommandList))
 
 
 def addVariation(covidGenome, variantListFname):
