@@ -2,6 +2,17 @@
 
 This repo contains miscellaneous exploratory work related to Covid-19.
 
+## Dockerfile
+
+The `Dockerfile` builds a Docker image for running the stuff in this
+repo.
+* numerous bioinformatics packages from the Ubuntu repo (inherited
+  from my `bioinfo-base` image)
+* Openstructure, built in `/usr/local/src`
+* OpenSSH server, so you can `ssh -X` into the container and run
+  `/usr/local/src/openstructure/stage/bin/dng`
+
+
 ## Personal Warm-Up Project
 
 The main purpose of this project is to get me started and somewhat
@@ -129,6 +140,7 @@ reference to them.
 * [COVID-19 Data Platform](https://www.ebi.ac.uk/covid-19) hosted by EBI
 * [ELIXIR support for SARS-CoV-2 research](https://elixir-europe.org/covid-19-resources)
 * [rOpenStats COVID19 package](https://github.com/rOpenStats/COVID19)
+* [Global Molecular Modelling & Simulation Efforts Toward Covid19](http://www.hecbiosim.ac.uk/covid-19) (High-End Computing Resources by the Biomolecular Simulation, HECBIOSIM)
 
 ### Hackathons etc.
 
@@ -140,7 +152,7 @@ reference to them.
   COVID-19](https://www.meetup.com/Data-Science-Festival-London/events/269622757/)
   organised by Data Science Festival
 * https://www.codevscovid19.org/ -- first edition started 27 March but there may be more editions?
-
+* [Rapid Assistance in Modelling the Pandemic: RAMP](https://epcced.github.io/ramp/)
 
 ### Coding Resources
 
