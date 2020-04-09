@@ -41,6 +41,8 @@ or only minor changes.
 
 * Covid-19 main proteinase `pdb6lu7.ent`: downloaded from
   https://www.ebi.ac.uk/pdbe/entry/pdb/6lu7
+* Covid-19 proteinase `6m71.pdb`: downloaded from
+  http://www.rcsb.org/structure/6M71
 * Covid-19 spike protein `6vsb.pdb`: downloaded from
   https://www.rcsb.org/structure/6vsb (currently not used)
 * `NC_045512.2.gb`: downloaded from

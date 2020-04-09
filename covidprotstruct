@@ -151,6 +151,10 @@ class CovidProtein:
             if aaFeature != gapChar:
                 iFeature = iFeature + 1
 
+    def dumpAllSeqRecords(self, prefix):
+        Bio.SeqIO.write([self.chainSeqRecord], '%s_chain.fasta' % argNamespace.dumpPrefix, 'fasta')
+        Bio.SeqIO.write([self.featureSeqRecord], '%s_feature.fasta' % argNamespace.dumpPrefix, 'fasta')
+
     def makeVariationLevelList(self):
         """Basic indicator of variation per codon.
 
@@ -252,6 +256,17 @@ def testFunc(argNamespace):
     sys.stderr.write('just testing...\n')
 
 
+def extractChainSequenceFromPdb(argNamespace):
+    structure = Bio.PDB.PDBParser().get_structure('dummy', argNamespace.pdbFname)
+    chainIdList = [chain.id for chain in structure.get_chains()]
+    if argNamespace.chainId not in chainIdList:
+        raise Exception('chain %s not in structure (contains chains %s)' % (argNamespace.chainId, ', '.join(chainIdList)))
+    chainIndex = chaindIdList.index(argNamespace.chainId)
+    chain = list(self.structure.get_chains())[chainIndex]
+    sr = extractAminoAcidSeqRecordFromChain(chain)
+    Bio.SeqIO.write([sr], argNamespace.outFname, 'fasta')
+
+    
 def showCovidProteinFunc(argNamespace):
     suffixCommandList = ['zoom complete=1']
     covidGenome = readCovidGenome(argNamespace.genbankFname, argNamespace.variantListFname)
@@ -263,6 +278,9 @@ def showCovidProteinFunc(argNamespace):
         suffixCommandList = ['rotate x, -70', 'rotate y, 160'] + suffixCommandList
     else:
         raise Exception('unknown protein name: %s' % argNamespace.proteinName)
+    logger.debug('dumpPrefix = %s', argNamespace.dumpPrefix)
+    if argNamespace.dumpPrefix is not None:
+        covidProtein.dumpAllSeqRecords(argNamespace.dumpPrefix)
     covidProtein.showMoleculePymol(['bg_color white', 'set fog, off'], suffixCommandList)
 
 
@@ -273,13 +291,14 @@ def addTestParser(subparsers):
 
 def addShowCovidProteinParser(subparsers):
     p = subparsers.add_parser('showprotein', help='show a protein')
+    p.add_argument('--dumpPrefix', help='prefix for dumping SeqRecords in FASTA format')
     p.add_argument('proteinName', help='protein name')
     p.set_defaults(func=showCovidProteinFunc)
 
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s: %(module)s:%(lineno)d, %(funcName)s, %(asctime)s: %(message)s')
-    # logger = logging.getLogger(__name__)
+    logger = logging.getLogger(__name__)
     p = argparse.ArgumentParser(description='covidprotstruct -- explore Covid-19 protein structures')
     p.add_argument('--loglevel', help='set logging level [DEBUG, INFO, WARNING, ERROR, CRITICAL]')
     subparsers = p.add_subparsers(title='subcommands')
